@@ -26,13 +26,13 @@ from collections.abc import Callable
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
+from apps.artagent.backend.config.constants import resolve_tts_voice
+from apps.artagent.backend.src.orchestration.naming import find_agent_by_name
+from apps.artagent.backend.src.orchestration.session_agents import get_session_agent
 from fastapi import WebSocket
 from fastapi.websockets import WebSocketState
 from utils.ml_logging import get_logger
 from utils.telemetry_decorators import add_speech_tts_metrics, trace_speech
-
-from apps.artagent.backend.src.orchestration.naming import find_agent_by_name
-from apps.artagent.backend.src.orchestration.session_agents import get_session_agent
 
 if TYPE_CHECKING:
     from apps.artagent.backend.voice.shared.context import VoiceSessionContext
@@ -88,8 +88,8 @@ class TTSPlayback:
         if isinstance(context, WebSocket):
             # Legacy API: context is actually a websocket
             from apps.artagent.backend.voice.shared.context import (
-                VoiceSessionContext,
                 TransportType,
+                VoiceSessionContext,
             )
 
             websocket = context
@@ -162,7 +162,11 @@ class TTSPlayback:
                     agent_name,
                     voice.name,
                 )
-                return (voice.name, voice.style, voice.rate)
+                return (
+                    resolve_tts_voice(self._context.transcription_language, voice.name),
+                    voice.style,
+                    voice.rate,
+                )
 
         # Try session agent (Agent Builder override) - has priority over base agents
         start_agent_name = getattr(self._app_state, "start_agent", "Concierge")
@@ -176,7 +180,11 @@ class TTSPlayback:
                     start_agent_name,
                     voice.name,
                 )
-                return (voice.name, voice.style, voice.rate)
+                return (
+                    resolve_tts_voice(self._context.transcription_language, voice.name),
+                    voice.style,
+                    voice.rate,
+                )
 
         # Fallback to start agent from unified agents (base registry)
         unified_agents = getattr(self._app_state, "unified_agents", {})
@@ -192,14 +200,25 @@ class TTSPlayback:
                     start_agent_name,
                     voice.name,
                 )
-                return (voice.name, voice.style, voice.rate)
+                return (
+                    resolve_tts_voice(self._context.transcription_language, voice.name),
+                    voice.style,
+                    voice.rate,
+                )
 
         # Emergency fallback - should not happen if agents are configured
         logger.warning(
             "[%s] No agent voice found, using fallback voice",
             self._session_short,
         )
-        return ("en-US-AvaMultilingualNeural", "conversational", None)
+        return (
+            resolve_tts_voice(
+                self._context.transcription_language,
+                "en-US-AvaMultilingualNeural",
+            ),
+            "conversational",
+            None,
+        )
 
     def set_active_agent(self, agent_name: str | None) -> None:
         """

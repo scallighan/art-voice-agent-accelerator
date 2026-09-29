@@ -247,6 +247,7 @@ class ACSLifecycleHandler:
         call_id: str = None,
         browser_session_id: str = None,  # NEW: Browser session ID for UI coordination
         stream_mode: StreamMode | None = None,
+        transcription_language: str | None = None,
         record_call: bool | None = None,
     ) -> dict[str, Any]:
         """
@@ -262,6 +263,8 @@ class ACSLifecycleHandler:
         :type browser_session_id: str
         :param stream_mode: Streaming mode override for this call
         :type stream_mode: Optional[StreamMode]
+        :param transcription_language: Optional Voice Live transcription locale
+        :type transcription_language: Optional[str]
         :param record_call: Optional override for enabling ACS call recording
         :type record_call: Optional[bool]
         :return: Call initiation result
@@ -334,6 +337,20 @@ class ACSLifecycleHandler:
                             call_id,
                             exc,
                         )
+
+                    if transcription_language:
+                        try:
+                            await redis_mgr.set_value_async(
+                                f"call_transcription_language:{call_id}",
+                                transcription_language,
+                                ttl_seconds=3600 * 24,
+                            )
+                        except Exception as exc:
+                            logger.warning(
+                                "Failed to persist transcription language for %s: %s",
+                                call_id,
+                                exc,
+                            )
 
                     try:
                         await redis_mgr.set_value_async(

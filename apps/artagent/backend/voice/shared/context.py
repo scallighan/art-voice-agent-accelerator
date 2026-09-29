@@ -126,6 +126,7 @@ class VoiceSessionContext:
         session_id: Unique session identifier
         call_connection_id: ACS call connection ID (or same as session_id)
         transport: Transport type (browser/acs/voicelive)
+        transcription_language: Selected locale for recognition and speech output
 
         tts_client: TTS synthesizer from pool (Azure Speech SDK)
         stt_client: STT recognizer from pool (Azure Speech SDK)
@@ -158,6 +159,7 @@ class VoiceSessionContext:
     call_connection_id: str | None = None
     transport: TransportType = TransportType.ACS
     conn_id: str | None = None  # Browser connection ID
+    transcription_language: str | None = None
 
     # ─── Pool Resources (acquired from pools) ───
     tts_client: Any = None  # SpeechSynthesizer

@@ -15,12 +15,13 @@
 module "appconfig" {
   source = "./modules/appconfig"
 
-  name                = "appconfig-${var.environment_name}-${local.resource_token}"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  environment_name    = var.environment_name
-  sku                 = "standard"
-  tags                = local.tags
+  name                  = "appconfig-${var.environment_name}-${local.resource_token}"
+  resource_group_name   = azurerm_resource_group.main.name
+  location              = azurerm_resource_group.main.location
+  environment_name      = var.environment_name
+  sku                   = "standard"
+  public_network_access = local.private_endpoints_only ? "Disabled" : "Enabled"
+  tags                  = local.tags
 
   # Identity access
   backend_identity_principal_id  = azurerm_user_assigned_identity.backend.principal_id

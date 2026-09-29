@@ -17,7 +17,7 @@ resource "azurerm_app_configuration" "main" {
   location                   = var.location
   sku                        = var.sku
   local_auth_enabled         = false # Enforce managed identity only
-  public_network_access      = "Enabled"
+  public_network_access      = var.public_network_access
   purge_protection_enabled   = false # Allow deletion in non-prod
   soft_delete_retention_days = 1     # Minimal retention for dev
 

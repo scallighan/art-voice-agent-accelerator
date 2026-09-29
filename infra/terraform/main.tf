@@ -37,12 +37,12 @@ provider "azurerm" {
     }
     app_configuration {
       purge_soft_delete_on_destroy = true
-      recover_soft_deleted = true
+      recover_soft_deleted         = true
     }
     cognitive_account {
       purge_soft_delete_on_destroy = true
-      
-    }    
+
+    }
   }
   storage_use_azuread = true
 }
@@ -118,6 +118,7 @@ locals {
     log_analytics              = "log-${local.resource_token}"
     app_insights               = "ai-${local.resource_token}"
     container_env              = "cae-${var.name}-${var.environment_name}-${local.resource_token}"
+    virtual_network            = "vnet-${var.name}-${var.environment_name}-${local.resource_token}"
     email_service              = "email-${var.name}-${var.environment_name}-${local.resource_token}"
     email_domain               = "AzureManagedDomain"
     foundry_account            = substr(replace("${var.name}-${local.resource_token}-aif", "/[^a-zA-Z0-9]/", ""), 0, 24)
@@ -125,6 +126,8 @@ locals {
     voice_live_foundry_account = substr(replace("${var.name}-${local.resource_token}-avl", "/[^a-zA-Z0-9]/", ""), 0, 24)
     voice_live_foundry_project = "${var.name}-${local.resource_token}-avl-proj"
   }
+
+  private_endpoints_only = var.enable_private_endpoints && var.disable_public_network_access
 
   foundry_project_display = "AI Foundry ${var.environment_name}"
   foundry_project_desc    = "AI Foundry project for ${var.environment_name} environment"

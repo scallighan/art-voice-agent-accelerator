@@ -6,6 +6,15 @@ All notable changes to the **Azure Real-Time (ART) Agent Accelerator** are docum
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **Browser CORS preflight** — Pinned the deployed FastAPI and Starlette versions to
+  prevent OpenTelemetry route instrumentation from crashing `OPTIONS` requests.
+- **Arabic/English switching** — Arabic regional voice selection no longer pins Voice Live
+  input transcription to Arabic, allowing callers to switch back to English mid-conversation.
+
 ## [2.1.0] - 2026-02-01
 
 ### 🔌 MCP Protocol & Lifecycle Management
@@ -328,5 +337,3 @@ First production release with enterprise-grade security, observability, and scal
 - Basic audio processing and streaming
 - Initial Azure service integrations
 - CI/CD pipeline foundation
-
-

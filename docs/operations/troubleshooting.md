@@ -201,6 +201,25 @@
 
 ## :material-api: Backend & API Issues
 
+!!! question "Problem: Browser requests fail CORS preflight with HTTP 500"
+    **Symptoms:**
+    - The browser reports that `Access-Control-Allow-Origin` is missing.
+    - An `OPTIONS` request to the backend returns `500 Internal Server Error`.
+    - Normal health requests still return HTTP 200.
+
+    **Solution:**
+    1. Rebuild and redeploy the backend using the repository's pinned FastAPI and Starlette versions:
+        ```bash
+        azd deploy rtaudio-server --no-prompt
+        ```
+    2. Verify the preflight response:
+        ```bash
+        curl -i -X OPTIONS "https://<backend>/api/v1/health" \
+          -H "Origin: https://<frontend>" \
+          -H "Access-Control-Request-Method: GET"
+        ```
+       The response should be HTTP 200 and include `Access-Control-Allow-Origin`.
+
 !!! question "Problem: FastAPI server won't start or endpoints return 500 errors"
     **Symptoms:**
     - Import errors, "port already in use," or environment variable errors on startup.

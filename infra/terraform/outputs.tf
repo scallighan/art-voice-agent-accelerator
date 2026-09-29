@@ -86,7 +86,7 @@ output "AZURE_STORAGE_BLOB_ENDPOINT" {
 
 output "AZURE_STORAGE_CONTAINER_URL" {
   description = "Azure Storage Container URL"
-  value       = "${azurerm_storage_account.main.primary_blob_endpoint}${azurerm_storage_container.audioagent.name}"
+  value       = "${azurerm_storage_account.main.primary_blob_endpoint}audioagent"
 }
 
 output "AZURE_COSMOS_DATABASE_NAME" {

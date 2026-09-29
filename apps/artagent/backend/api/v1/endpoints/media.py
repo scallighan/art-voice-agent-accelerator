@@ -59,6 +59,27 @@ async def _resolve_stream_mode(redis_mgr, call_connection_id: str | None) -> Str
     return ACS_STREAMING_MODE
 
 
+async def _resolve_transcription_language(
+    redis_mgr, call_connection_id: str | None
+) -> str | None:
+    """Resolve the selected Voice Live transcription locale for a call."""
+    if not call_connection_id or redis_mgr is None:
+        return None
+    try:
+        stored = await redis_mgr.get_value_async(
+            f"call_transcription_language:{call_connection_id}"
+        )
+        if stored:
+            return stored.decode() if isinstance(stored, bytes) else str(stored)
+    except Exception:
+        logger.debug(
+            "Failed to resolve transcription language for %s",
+            call_connection_id,
+            exc_info=True,
+        )
+    return None
+
+
 async def _resolve_session_id(
     app_state, call_connection_id: str | None, query_params: dict, headers: dict
 ) -> str:
@@ -169,6 +190,9 @@ async def acs_media_stream(websocket: WebSocket) -> None:
             )
 
             stream_mode = await _resolve_stream_mode(redis_mgr, call_connection_id)
+            transcription_language = await _resolve_transcription_language(
+                redis_mgr, call_connection_id
+            )
             websocket.state.stream_mode = stream_mode
 
             # Accept WebSocket and register connection
@@ -216,6 +240,7 @@ async def acs_media_stream(websocket: WebSocket) -> None:
                     call_connection_id=call_connection_id,
                     session_id=session_id,
                     stream_mode=stream_mode,
+                    transcription_language=transcription_language,
                 )
 
                 # Store handler in connection metadata
@@ -252,6 +277,7 @@ async def _create_media_handler(
     call_connection_id: str,
     session_id: str,
     stream_mode: StreamMode,
+    transcription_language: str | None = None,
 ):
     """Create appropriate media handler based on streaming mode."""
     if stream_mode == StreamMode.MEDIA:
@@ -261,6 +287,7 @@ async def _create_media_handler(
             transport=TransportType.ACS,
             call_connection_id=call_connection_id,
             stream_mode=stream_mode,
+            transcription_language=transcription_language,
         )
         return await VoiceHandler.create(config, websocket.app.state)
     elif stream_mode == StreamMode.VOICE_LIVE:
@@ -292,6 +319,7 @@ async def _create_media_handler(
             websocket=websocket,
             session_id=session_id,
             call_connection_id=call_connection_id,
+            transcription_language=transcription_language,
         )
     else:
         await websocket.close(code=1000, reason="Invalid streaming mode")

@@ -999,7 +999,7 @@ class SpeechCascadeHandler:
 
         # Initialize speech recognizer
         self.recognizer = recognizer or StreamingSpeechRecognizerFromBytes(
-            candidate_languages=["en-US", "fr-FR", "de-DE", "es-ES", "it-IT"],
+            candidate_languages=["en-US", "ar-AE", "fr-FR", "de-DE", "es-ES", "it-IT"],
             vad_silence_timeout_ms=800,
             audio_format="pcm",
             use_semantic_segmentation=False,

@@ -121,7 +121,7 @@ resource "azurerm_container_app" "cardapi_mcp" {
   }
 
   ingress {
-    external_enabled = true  # MCP server exposed for external tool calls
+    external_enabled = true # MCP server exposed for external tool calls
     target_port      = 8080
     traffic_weight {
       percentage      = 100

@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from apps.artagent.backend.config.constants import ARABIC_DIALECTS, resolve_tts_voice
 from jinja2 import Template
 from utils.ml_logging import get_logger
 
@@ -291,7 +292,7 @@ class SpeechConfig:
 
     # Language settings
     candidate_languages: list[str] = field(
-        default_factory=lambda: ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT"]
+        default_factory=lambda: ["en-US", "ar-AE", "es-ES", "fr-FR", "de-DE", "it-IT"]
     )
 
     # Advanced features
@@ -307,14 +308,18 @@ class SpeechConfig:
 
     def __post_init__(self):
         """Initialize default languages constant."""
-        object.__setattr__(self, "_DEFAULT_LANGS", ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT"])
+        object.__setattr__(
+            self,
+            "_DEFAULT_LANGS",
+            ["en-US", "ar-AE", "es-ES", "fr-FR", "de-DE", "it-IT"],
+        )
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SpeechConfig:
         """Create SpeechConfig from dict."""
         if not data:
             return cls()
-        default_langs = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT"]
+        default_langs = ["en-US", "ar-AE", "es-ES", "fr-FR", "de-DE", "it-IT"]
         return cls(
             vad_silence_timeout_ms=int(data.get("vad_silence_timeout_ms", 800)),
             use_semantic_segmentation=bool(data.get("use_semantic_segmentation", False)),
@@ -557,10 +562,24 @@ class UnifiedAgent:
 
         try:
             template = Template(self.prompt_template)
-            return template.render(**full_context)
+            rendered_prompt = template.render(**full_context)
         except Exception as e:
             logger.error("Failed to render prompt for %s: %s", self.name, e)
-            return self.prompt_template
+            rendered_prompt = self.prompt_template
+
+        transcription_language = filtered_context.get("transcription_language")
+        dialect_name = ARABIC_DIALECTS.get(transcription_language)
+        if not dialect_name:
+            return rendered_prompt
+
+        dialect_instruction = (
+            f"The caller selected {dialect_name} ({transcription_language}). "
+            "Respond in the natural colloquial dialect used in that region, matching the "
+            "caller's vocabulary, idioms, tone, and conversational register. Do not default "
+            "to Modern Standard Arabic (الفصحى) or another regional dialect unless the caller "
+            "explicitly asks you to switch."
+        )
+        return f"{rendered_prompt}\n\n{dialect_instruction}"
 
     # ═══════════════════════════════════════════════════════════════════
     # GREETING RENDERING
@@ -856,9 +875,12 @@ class UnifiedAgent:
 
         return tools
 
-    def build_voicelive_voice(self) -> Any | None:
+    def build_voicelive_voice(self, *, language: str | None = None) -> Any | None:
         """
         Build VoiceLive voice configuration from this agent's voice settings.
+
+        Keyword Args:
+            language: Selected output language used to choose a regional voice.
 
         Returns:
             AzureStandardVoice or similar object, or None if SDK not available.
@@ -887,15 +909,19 @@ class UnifiedAgent:
             return AzureStandardVoice(name=self.voice.name)
 
         if voice_type in {"azure-standard", "azure_standard", "azure"}:
+            voice_name = resolve_tts_voice(language, self.voice.name)
+            uses_regional_voice = voice_name != self.voice.name
             optionals = {}
             for key in ("style", "pitch", "rate"):
+                if uses_regional_voice and key == "style":
+                    continue
                 val = getattr(self.voice, key, None)
                 if val is not None and val != "+0%":
                     optionals[key] = val
-            return AzureStandardVoice(name=self.voice.name, **optionals)
+            return AzureStandardVoice(name=voice_name, **optionals)
 
         # Default to standard voice
-        return AzureStandardVoice(name=self.voice.name)
+        return AzureStandardVoice(name=resolve_tts_voice(language, self.voice.name))
 
     def build_voicelive_vad(self) -> Any | None:
         """
@@ -1023,9 +1049,10 @@ class UnifiedAgent:
             system_vars = system_vars or {}
             system_vars.setdefault("active_agent", self.name)
             instructions = self.render_prompt(system_vars)
+            transcription_language = system_vars.get("transcription_language")
 
             # Build session components
-            voice_payload = self.build_voicelive_voice()
+            voice_payload = self.build_voicelive_voice(language=transcription_language)
             vad = self.build_voicelive_vad()
             modalities = self.get_voicelive_modalities()
             in_fmt, out_fmt = self.get_voicelive_audio_formats()
@@ -1044,6 +1071,10 @@ class UnifiedAgent:
                 transcription_kwargs["model"] = transcription_cfg["model"]
             if transcription_cfg.get("language"):
                 transcription_kwargs["language"] = transcription_cfg["language"]
+
+            # The selected locale controls the prompt and output voice, not STT.
+            # Leaving recognition unpinned allows callers to switch between
+            # Arabic and English without rebuilding the Voice Live session.
 
             input_audio_transcription = (
                 AudioInputTranscriptionOptions(**transcription_kwargs)

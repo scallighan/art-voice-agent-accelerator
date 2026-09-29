@@ -5,6 +5,7 @@ module "ai_foundry" {
   location          = azurerm_resource_group.main.location
   tags              = local.tags
 
+  public_network_access         = local.private_endpoints_only ? "Disabled" : "Enabled"
   disable_local_auth            = var.disable_local_auth
   foundry_account_name          = local.resource_names.foundry_account
   foundry_custom_subdomain_name = local.resource_names.foundry_account

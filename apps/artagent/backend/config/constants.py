@@ -6,6 +6,8 @@ Constants, defaults, and non-configurable values used throughout the application
 These are hard-coded values that don't come from environment variables.
 """
 
+from typing import Literal
+
 # ==============================================================================
 # API ENDPOINTS AND PATHS
 # ==============================================================================
@@ -87,8 +89,34 @@ DEFAULT_ENABLE_AUTH_VALIDATION: bool = False
 # SUPPORTED LANGUAGES
 # ==============================================================================
 
+ArabicLocale = Literal["ar-AE", "ar-SA", "ar-EG", "ar-JO"]
+
+ARABIC_DIALECTS: dict[ArabicLocale, str] = {
+    "ar-AE": "Arabic (United Arab Emirates)",
+    "ar-SA": "Arabic (Saudi Arabia)",
+    "ar-EG": "Arabic (Egypt)",
+    "ar-JO": "Arabic (Jordan)",
+}
+
+ARABIC_TTS_VOICES: dict[ArabicLocale, str] = {
+    "ar-AE": "ar-AE-FatimaNeural",
+    "ar-SA": "ar-SA-ZariyahNeural",
+    "ar-EG": "ar-EG-SalmaNeural",
+    "ar-JO": "ar-JO-SanaNeural",
+}
+
+
+def resolve_tts_voice(language: str | None, default_voice: str) -> str:
+    """Return a native regional voice when the selected language is Arabic."""
+    return ARABIC_TTS_VOICES.get(language, default_voice)
+
+
 SUPPORTED_LANGUAGES: list[str] = [
     "en-US",
+    "ar-AE",
+    "ar-SA",
+    "ar-EG",
+    "ar-JO",
     "es-ES",
     "fr-FR",
     "ko-KR",

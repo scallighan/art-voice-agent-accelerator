@@ -6,10 +6,10 @@ resource "azurerm_container_registry" "main" {
   name                = local.resource_names.container_registry
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
-  sku                 = "Basic"
+  sku                 = var.enable_private_endpoints ? "Premium" : "Basic"
   admin_enabled       = false
 
-  public_network_access_enabled = true
+  public_network_access_enabled = var.acr_public_network_access_enabled
 
   tags = local.tags
 }
@@ -52,6 +52,7 @@ resource "azurerm_container_app_environment" "main" {
   resource_group_name = azurerm_resource_group.main.name
 
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  infrastructure_subnet_id   = var.enable_private_endpoints ? azurerm_subnet.container_apps[0].id : null
 
   tags = local.tags
 }
@@ -249,7 +250,7 @@ resource "azurerm_container_app" "backend" {
     ]
   }
   depends_on = [
-    azurerm_key_vault_secret.acs_connection_string,
+    azapi_resource_action.acs_connection_string,
     azurerm_role_assignment.keyvault_backend_secrets
   ]
 }

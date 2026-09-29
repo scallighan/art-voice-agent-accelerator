@@ -334,6 +334,19 @@ class TestVoiceConfig:
 class TestAgentVoiceResolution:
     """Tests for resolving voice settings from agent via context."""
 
+    def test_selected_arabic_locale_overrides_agent_voice(self, voice_context):
+        """TTS playback should use the native voice for the selected Arabic locale."""
+        from apps.artagent.backend.voice.tts.playback import TTSPlayback
+
+        voice_context.transcription_language = "ar-EG"
+        playback = TTSPlayback(voice_context, MagicMock())
+
+        voice_name, voice_style, voice_rate = playback.get_agent_voice()
+
+        assert voice_name == "ar-EG-SalmaNeural"
+        assert voice_style == "cheerful"
+        assert voice_rate == "+0%"
+
     def test_voice_from_context_agent(self, voice_context):
         """Voice settings should be accessible via context.current_agent."""
         agent = voice_context.current_agent

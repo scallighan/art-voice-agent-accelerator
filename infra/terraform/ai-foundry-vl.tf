@@ -6,6 +6,7 @@ module "ai_foundry_voice_live" {
   location          = local.voice_live_primary_region
   tags              = local.tags
 
+  public_network_access         = local.private_endpoints_only ? "Disabled" : "Enabled"
   disable_local_auth            = var.disable_local_auth
   foundry_account_name          = local.resource_names.voice_live_foundry_account
   foundry_custom_subdomain_name = local.resource_names.voice_live_foundry_account

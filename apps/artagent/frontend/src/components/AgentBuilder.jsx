@@ -2869,7 +2869,7 @@ export default function AgentBuilder({
                     
                     <Autocomplete
                       multiple
-                      options={['en-US', 'es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-BR', 'ja-JP', 'ko-KR', 'zh-CN']}
+                      options={['en-US', 'ar-AE', 'es-ES', 'fr-FR', 'de-DE', 'it-IT', 'pt-BR', 'ja-JP', 'ko-KR', 'zh-CN']}
                       value={config.speech?.candidate_languages || ['en-US']}
                       onChange={(_, newValue) => handleNestedConfigChange('speech', 'candidate_languages', newValue)}
                       renderInput={(params) => (

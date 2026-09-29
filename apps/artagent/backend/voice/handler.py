@@ -168,6 +168,7 @@ class VoiceHandlerConfig:
     stream_mode: StreamMode = field(default_factory=lambda: ACS_STREAMING_MODE)
     user_email: str | None = None
     scenario: str | None = None  # Industry scenario (banking, default, etc.)
+    transcription_language: str | None = None
 
 
 # ============================================================================
@@ -345,6 +346,7 @@ class VoiceHandler:
             call_connection_id=config.call_connection_id or config.session_id,
             transport=config.transport,
             conn_id=config.conn_id,
+            transcription_language=config.transcription_language,
             tts_client=tts_client,
             stt_client=stt_client,
             tts_tier=tts_tier,

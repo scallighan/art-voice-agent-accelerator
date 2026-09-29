@@ -49,6 +49,48 @@ variable "cosmosdb_public_network_access_enabled" {
   default     = true
 }
 
+variable "enable_private_endpoints" {
+  description = "Create a VNet-integrated Container Apps environment and private endpoints for supported platform services"
+  type        = bool
+  default     = false
+}
+
+variable "disable_public_network_access" {
+  description = "Disable public service endpoints after private endpoints are enabled. Requires provisioning from a private network runner."
+  type        = bool
+  default     = false
+}
+
+variable "virtual_network_address_space" {
+  description = "Address space for the application virtual network"
+  type        = list(string)
+  default     = ["10.42.0.0/16"]
+}
+
+variable "container_apps_subnet_address_prefix" {
+  description = "Dedicated /23 or larger subnet for the Container Apps environment"
+  type        = string
+  default     = "10.42.0.0/23"
+}
+
+variable "private_endpoints_subnet_address_prefix" {
+  description = "Dedicated subnet for private endpoints"
+  type        = string
+  default     = "10.42.2.0/24"
+}
+
+variable "deployer_ip_cidrs" {
+  description = "Public CIDRs allowed to administer Key Vault while private endpoints are enabled"
+  type        = list(string)
+  default     = []
+}
+
+variable "acr_public_network_access_enabled" {
+  description = "Keep ACR public access enabled for azd remote builds. Disable only when builds run from a private agent pool."
+  type        = bool
+  default     = true
+}
+
 variable "principal_id" {
   description = "Principal ID of the user or service principal to assign application roles"
   type        = string
@@ -88,7 +130,7 @@ variable "acs_data_location" {
 variable "enable_acs_email" {
   description = "Enable Azure Communication Services Email integration (optional, not required for voice)"
   type        = bool
-  default     = true  # Backwards compatible - existing deployments have email resources
+  default     = true # Backwards compatible - existing deployments have email resources
 }
 
 variable "disable_local_auth" {

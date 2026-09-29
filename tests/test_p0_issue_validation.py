@@ -21,6 +21,7 @@ Issue Index:
 import ast
 import asyncio
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -387,6 +388,7 @@ class TestP0_4_CORSAndAuthConfigurability:
     """
 
     SETTINGS_FILE = "apps/artagent/backend/config/settings.py"
+    PROJECT_FILE = "pyproject.toml"
 
     def test_allowed_origins_is_configurable(self):
         """ALLOWED_ORIGINS uses _env_list so it can be overridden via env var."""
@@ -411,6 +413,14 @@ class TestP0_4_CORSAndAuthConfigurability:
         assert '"/api/v1/readiness"' in source, (
             "P0-4: ENTRA_EXEMPT_PATHS should include /api/v1/readiness"
         )
+
+    def test_fastapi_stack_is_pinned_for_cors_preflight_compatibility(self):
+        """Deployment dependencies avoid the FastAPI/OTEL OPTIONS regression."""
+        project = tomllib.loads(_read_source(self.PROJECT_FILE))
+        dependencies = project["project"]["dependencies"]
+
+        assert "fastapi==0.128.0" in dependencies
+        assert "starlette==0.50.0" in dependencies
 
 
 # =============================================================================

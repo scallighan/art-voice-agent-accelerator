@@ -6,6 +6,7 @@ Pydantic schemas for call management API requests and responses.
 
 from typing import Any, Literal
 
+from config.constants import ArabicLocale
 from pydantic import BaseModel, ConfigDict, Field
 from src.enums.stream_modes import StreamMode
 
@@ -44,6 +45,11 @@ class CallInitiateRequest(BaseModel):
             "environment setting for the duration of the call."
         ),
         json_schema_extra={"example": "voice_live"},
+    )
+    language: ArabicLocale | None = Field(
+        default=None,
+        description="Optional Arabic transcription locale for Voice Live calls.",
+        json_schema_extra={"example": "ar-AE"},
     )
     record_call: bool | None = Field(
         default=None,

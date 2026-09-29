@@ -5,6 +5,8 @@
   "cosmosdb_location": null,
   "acs_data_location": "United States",
   "disable_local_auth": true,
+  "enable_private_endpoints": true,
+  "disable_public_network_access": false,
   "enable_redis_ha": false,
   "redis_sku": "MemoryOptimized_M10",
   "redis_port": 10000,

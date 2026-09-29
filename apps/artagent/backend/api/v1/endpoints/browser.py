@@ -75,6 +75,7 @@ from apps.artagent.backend.voice import (
     VoiceHandlerConfig,
     pcm16le_rms,
 )
+from config.constants import ArabicLocale
 from ..schemas.realtime import RealtimeStatusResponse
 
 logger = get_logger("api.v1.endpoints.browser")
@@ -193,6 +194,7 @@ async def browser_conversation_endpoint(
     websocket: WebSocket,
     session_id: str | None = Query(None),
     streaming_mode: str | None = Query(None),
+    language: ArabicLocale | None = None,
     user_email: str | None = Query(None),
     scenario: str | None = Query(None, description="Scenario name (e.g., 'banking', 'default')"),
 ) -> None:
@@ -244,7 +246,7 @@ async def browser_conversation_endpoint(
                 # Create handler based on mode
                 if stream_mode == StreamMode.VOICE_LIVE:
                     handler, memory_manager = await _create_voice_live_handler(
-                        websocket, session_id, conn_id, user_email, scenario
+                        websocket, session_id, conn_id, user_email, scenario, language
                     )
                     metadata = {
                         "cm": memory_manager,
@@ -260,6 +262,7 @@ async def browser_conversation_endpoint(
                         conn_id=conn_id,
                         user_email=user_email,
                         scenario=scenario,
+                        transcription_language=language,
                     )
                     handler = await VoiceHandler.create(config, websocket.app.state)
                     memory_manager = handler.memory_manager
@@ -326,6 +329,7 @@ async def _create_voice_live_handler(
     conn_id: str,
     user_email: str | None,
     scenario: str | None,
+    language: ArabicLocale | None,
 ) -> tuple[VoiceLiveSDKHandler, MemoManager]:
     """
     Create VoiceLiveSDKHandler with barge-in infrastructure.
@@ -445,6 +449,7 @@ async def _create_voice_live_handler(
         call_connection_id=session_id,
         transport="realtime",
         user_email=user_email,
+        transcription_language=language,
     )
 
     return handler, memory_manager

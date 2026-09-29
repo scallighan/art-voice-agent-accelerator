@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import ArabicDialectSelector from './ArabicDialectSelector.jsx';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -214,7 +215,14 @@ const ProfileDetailRow = ({ icon, label, value, multiline = false }) => (
   </Box>
 );
 
-const ProfileDetailsPanel = ({ profile, sessionId, open, onClose }) => {
+const ProfileDetailsPanel = ({
+  profile,
+  sessionId,
+  open,
+  onClose,
+  selectedArabicDialect = 'auto',
+  onArabicDialectChange,
+}) => {
   const [renderContent, setRenderContent] = useState(false);
   const [activeTab, setActiveTab] = useState('verification');
   const contentRef = useRef(null);
@@ -1516,6 +1524,16 @@ const ProfileDetailsPanel = ({ profile, sessionId, open, onClose }) => {
                 gap: 2.5,
               }}
             >
+              <SectionCard>
+                <SectionTitle icon="🌍">Voice Preferences</SectionTitle>
+                <Typography sx={{ fontSize: '11px', color: '#64748b' }}>
+                  Choose the Arabic dialect Voice Live should use for the next conversation.
+                </Typography>
+                <ArabicDialectSelector
+                  value={selectedArabicDialect}
+                  onChange={onArabicDialectChange}
+                />
+              </SectionCard>
               {activeTabContent}
               {safetyNotice && (
                 <Box

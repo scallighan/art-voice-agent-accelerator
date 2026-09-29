@@ -12,7 +12,13 @@ resource "azurerm_key_vault" "main" {
   purge_protection_enabled   = true
 
   rbac_authorization_enabled    = true
-  public_network_access_enabled = true
+  public_network_access_enabled = !local.private_endpoints_only
+
+  network_acls {
+    bypass         = "AzureServices"
+    default_action = var.enable_private_endpoints ? "Deny" : "Allow"
+    ip_rules       = var.enable_private_endpoints ? var.deployer_ip_cidrs : []
+  }
 
   tags = local.tags
 }

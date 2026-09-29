@@ -54,6 +54,7 @@ const STREAM_MODE_STORAGE_KEY = 'artagent.streamingMode';
 const STREAM_MODE_FALLBACK = 'voice_live';
 const REALTIME_STREAM_MODE_STORAGE_KEY = 'artagent.realtimeStreamingMode';
 const REALTIME_STREAM_MODE_FALLBACK = 'realtime';
+const ARABIC_DIALECT_STORAGE_KEY = 'artagent.arabicDialect';
 const PANEL_MARGIN = 16;
 // Avoid noisy logging in hot-path streaming handlers unless explicitly enabled
 const ENABLE_VERBOSE_STREAM_LOGS = false;
@@ -256,6 +257,16 @@ function RealTimeVoiceApp() {
       return envMode;
     }
     return fallbackRealtimeStreamMode;
+  });
+  const [selectedArabicDialect, setSelectedArabicDialect] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return window.localStorage.getItem(ARABIC_DIALECT_STORAGE_KEY) || 'auto';
+      } catch (err) {
+        logger.warn('Failed to read stored Arabic dialect preference', err);
+      }
+    }
+    return 'auto';
   });
   const [sessionProfiles, setSessionProfiles] = useState({});
   const [sessionCoreMemory, setSessionCoreMemory] = useState(null);
@@ -1188,6 +1199,17 @@ showScenarioConfirmation(scenarioName, currentAgentRef.current);
       logger.warn('Failed to persist realtime streaming mode preference', err);
     }
   }, [selectedRealtimeStreamingMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      window.localStorage.setItem(ARABIC_DIALECT_STORAGE_KEY, selectedArabicDialect);
+    } catch (err) {
+      logger.warn('Failed to persist Arabic dialect preference', err);
+    }
+  }, [selectedArabicDialect]);
 
   useEffect(() => {
     if (!showPhoneInput) {
@@ -2227,10 +2249,16 @@ showScenarioConfirmation(scenarioName, currentAgentRef.current);
       // set_active_scenario_async with this value when the connection opens,
       // so no separate pre-start POST is needed.
       const scenarioForQuery = activeScenarioNameForStart || currentScenario;
+      const languageParam =
+        selectedArabicDialect === 'auto'
+          ? ''
+          : `&language=${encodeURIComponent(selectedArabicDialect)}`;
 
       const baseConversationUrl = `${WS_URL}/api/v1/browser/conversation?session_id=${currentSessionId}&streaming_mode=${encodeURIComponent(
         realtimeMode,
-      )}${emailParam}&scenario=${encodeURIComponent(scenarioForQuery || currentScenario)}`;
+      )}${emailParam}&scenario=${encodeURIComponent(
+        scenarioForQuery || currentScenario,
+      )}${languageParam}`;
       resetMetrics(currentSessionId);
       assistantStreamGenerationRef.current = 0;
       assistantStreamBufferRef.current = { turnId: null, text: "" };
@@ -4009,6 +4037,7 @@ showScenarioConfirmation(scenarioName, currentAgentRef.current);
         body: JSON.stringify({ 
           target_number: targetPhoneNumber,
           streaming_mode: selectedStreamingMode,
+          language: selectedArabicDialect === 'auto' ? null : selectedArabicDialect,
           context: {
             browser_session_id: currentSessionId,  // 🎯 Pass browser session ID for ACS coordination
             streaming_mode: selectedStreamingMode,
@@ -4985,6 +5014,8 @@ showScenarioConfirmation(scenarioName, currentAgentRef.current);
       sessionId={sessionId}
       open={showProfilePanel}
       onClose={() => setShowProfilePanel(false)}
+      selectedArabicDialect={selectedArabicDialect}
+      onArabicDialectChange={setSelectedArabicDialect}
     />
     <SessionPerformancePanel
       open={showAgentPanel}

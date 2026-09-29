@@ -156,7 +156,7 @@ DEFAULT_TEMPERATURE=0.7
 | `VAD_SEMANTIC_SEGMENTATION` | bool | `false` | Use semantic VAD |
 | `SILENCE_DURATION_MS` | int | `1300` | Silence before end-of-speech |
 | `STT_PROCESSING_TIMEOUT` | float | `10.0` | STT request timeout (seconds) |
-| `RECOGNIZED_LANGUAGE` | list | `"en-US,es-ES,fr-FR,ko-KR,it-IT,pt-PT,pt-BR"` | Supported languages |
+| `RECOGNIZED_LANGUAGE` | list | `"en-US,ar-AE,es-ES,fr-FR,ko-KR,it-IT,pt-PT,pt-BR"` | Supported languages |
 
 ---
 
@@ -272,6 +272,10 @@ Pre-warmed connections for lowest latency on first request:
 |----------|------|---------|-------------|
 | `ALLOWED_ORIGINS` | list | `"*"` | CORS allowed origins |
 
+Arabic locale selection controls the regional prompt and output voice. Voice Live input
+transcription remains language-automatic so callers can switch between Arabic and English
+within the same conversation.
+
 **Exempt Paths (no auth required):**
 
 ```python
@@ -343,8 +347,46 @@ AVAILABLE_VOICES = {
 ### Supported Languages
 
 ```python
-SUPPORTED_LANGUAGES = ["en-US", "es-ES", "fr-FR", "ko-KR", "it-IT"]
+SUPPORTED_LANGUAGES = ["en-US", "ar-AE", "es-ES", "fr-FR", "ko-KR", "it-IT"]
 ```
+
+`ar-AE` enables automatic recognition of the Arabic UAE dialect while preserving
+English as the default greeting language. Bundled Voice Live agents omit the
+transcription language hint so the service can automatically detect the caller's
+language. Set an agent's transcription language explicitly only when the session
+must recognize one locale.
+
+The profile panel's Voice Preferences selector provides explicit Voice Live options for:
+
+- `ar-AE` - United Arab Emirates
+- `ar-SA` - Saudi Arabia
+- `ar-EG` - Egypt
+- `ar-JO` - Jordan
+
+When a dialect is selected, it is applied to both transcription and every rendered
+agent prompt for the session. The agent is instructed to respond in the selected
+colloquial dialect and not fall back to Modern Standard Arabic unless the caller
+explicitly requests it. The preference remains active across prompt refreshes and
+agent handoffs. Speech output also switches from the agent's English multilingual
+voice to a native regional Azure neural voice:
+
+- `ar-AE` - `ar-AE-FatimaNeural`
+- `ar-SA` - `ar-SA-ZariyahNeural`
+- `ar-EG` - `ar-EG-SalmaNeural`
+- `ar-JO` - `ar-JO-SanaNeural`
+
+Speech Cascade sets the SSML language from the selected voice and omits unsupported
+expressive styles for Arabic voices. Voice Live applies the same regional voice to
+the session, including after agent handoffs.
+
+Azure Speech also supports these Arabic locales:
+
+`ar-BH`, `ar-DZ`, `ar-IL`, `ar-IQ`, `ar-KW`, `ar-LB`, `ar-LY`, `ar-MA`,
+`ar-OM`, `ar-PS`, `ar-QA`, `ar-SY`, `ar-TN`, and `ar-YE`.
+
+Language identification compares languages rather than regional dialects. Do not
+put multiple Arabic locales in the automatic candidate list; select one locale
+explicitly when dialect-specific recognition is required.
 
 ---
 

@@ -1902,6 +1902,8 @@ class SpeechSynthesizer:
             rate: Speech rate
         """
         voice = voice or self.voice
+        voice_locale_match = re.match(r"^[a-z]{2,3}-[A-Z]{2}", voice)
+        voice_locale = voice_locale_match.group(0) if voice_locale_match else "en-US"
 
         if style is None:
             style_to_apply = "chat"
@@ -1909,6 +1911,8 @@ class SpeechSynthesizer:
             style_to_apply = style.strip()
             if not style_to_apply:
                 style_to_apply = None
+        if voice_locale.startswith("ar-"):
+            style_to_apply = None
 
         if rate is None:
             rate_to_apply = "+3%"
@@ -1943,7 +1947,7 @@ class SpeechSynthesizer:
                 f'<mstts:express-as style="{style_to_apply}">{inner_content}</mstts:express-as>'
             )
 
-        ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="en-US">
+        ssml = f"""<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="{voice_locale}">
     <voice name="{voice}">
         {inner_content}
     </voice>

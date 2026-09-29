@@ -11,7 +11,7 @@ resource "azurerm_storage_account" "main" {
   account_replication_type        = "LRS"
   account_kind                    = "StorageV2"
   min_tls_version                 = "TLS1_2"
-  public_network_access_enabled   = true
+  public_network_access_enabled   = !local.private_endpoints_only
   allow_nested_items_to_be_public = false
 
   # Enable blob properties
@@ -24,17 +24,19 @@ resource "azurerm_storage_account" "main" {
   tags = local.tags
 }
 
-# Storage containers
-resource "azurerm_storage_container" "audioagent" {
-  name                  = "audioagent"
-  storage_account_id    = azurerm_storage_account.main.id
-  container_access_type = "private"
-}
+# Storage containers are deployed through ARM so provisioning works when
+# organizational policy disables the storage account's public data endpoint.
+resource "azapi_resource" "storage_containers" {
+  for_each = toset(["audioagent", "prompt"])
 
-resource "azurerm_storage_container" "prompt" {
-  name                  = "prompt"
-  storage_account_id    = azurerm_storage_account.main.id
-  container_access_type = "private"
+  type      = "Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01"
+  name      = each.value
+  parent_id = "${azurerm_storage_account.main.id}/blobServices/default"
+  body = {
+    properties = {
+      publicAccess = "None"
+    }
+  }
 }
 
 # RBAC assignments for Storage
@@ -92,7 +94,7 @@ resource "azapi_resource" "mongoCluster" {
       highAvailability = {
         targetMode = "Disabled"
       }
-      publicNetworkAccess = var.cosmosdb_public_network_access_enabled ? "Enabled" : "Disabled"
+      publicNetworkAccess = local.private_endpoints_only ? "Disabled" : (var.cosmosdb_public_network_access_enabled ? "Enabled" : "Disabled")
       serverVersion       = "8.0"
       sharding = {
         shardCount = 1
@@ -125,7 +127,7 @@ resource "azapi_resource" "mongoCluster" {
 
 # MongoDB firewall rule to allow all IP addresses
 resource "azapi_resource" "mongo_firewall_all" {
-  count     = var.cosmosdb_public_network_access_enabled ? 1 : 0
+  count     = !local.private_endpoints_only && var.cosmosdb_public_network_access_enabled ? 1 : 0
   type      = "Microsoft.DocumentDB/mongoClusters/firewallRules@2025-04-01-preview"
   parent_id = azapi_resource.mongoCluster.id
   name      = "allowAll"
@@ -143,12 +145,21 @@ resource "azapi_resource" "mongo_firewall_all" {
 # Store Entra ID connection string in Key Vault
 # NOTE: We construct this manually because the Azure-provided connectionString
 # includes password credentials, which conflict with MONGODB-OIDC auth.
-resource "azurerm_key_vault_secret" "cosmos_entra_connection_string" {
-  name            = "cosmos-entra-connection-string"
-  value           = "mongodb+srv://${azapi_resource.mongoCluster.name}.mongocluster.cosmos.azure.com/?tls=true&authMechanism=MONGODB-OIDC&retrywrites=false&maxIdleTimeMS=120000"
-  key_vault_id    = azurerm_key_vault.main.id
-  content_type    = "text/plain"
-  expiration_date = timeadd(timestamp(), "720h") # 30 days
+resource "azapi_resource_action" "cosmos_entra_connection_string" {
+  type        = "Microsoft.KeyVault/vaults/secrets@2025-05-01"
+  resource_id = "${azurerm_key_vault.main.id}/secrets/cosmos-entra-connection-string"
+  action      = ""
+  method      = "PUT"
+  when        = "apply"
+  body = {
+    properties = {
+      value       = "mongodb+srv://${azapi_resource.mongoCluster.name}.mongocluster.cosmos.azure.com/?tls=true&authMechanism=MONGODB-OIDC&retrywrites=false&maxIdleTimeMS=120000"
+      contentType = "text/plain"
+      attributes = {
+        enabled = true
+      }
+    }
+  }
   depends_on = [azurerm_role_assignment.keyvault_admin, azapi_resource.mongoCluster]
 }
 
@@ -161,13 +172,21 @@ resource "random_password" "cosmos_admin" {
 }
 
 # Store Cosmos DB admin password in Key Vault
-resource "azurerm_key_vault_secret" "cosmos_admin_password" {
-  name            = "cosmos-admin-password"
-  value           = random_password.cosmos_admin.result
-  key_vault_id    = azurerm_key_vault.main.id
-  content_type    = "text/plain"
-  expiration_date = timeadd(timestamp(), "720h") # 30 days
-
+resource "azapi_resource_action" "cosmos_admin_password" {
+  type        = "Microsoft.KeyVault/vaults/secrets@2025-05-01"
+  resource_id = "${azurerm_key_vault.main.id}/secrets/cosmos-admin-password"
+  action      = ""
+  method      = "PUT"
+  when        = "apply"
+  body = {
+    properties = {
+      value       = random_password.cosmos_admin.result
+      contentType = "text/plain"
+      attributes = {
+        enabled = true
+      }
+    }
+  }
   depends_on = [azurerm_role_assignment.keyvault_admin]
 }
 # RBAC assignments for Cosmos DB vCore cluster
@@ -248,12 +267,20 @@ data "azapi_resource" "mongo_cluster_info" {
 
 
 # Store MongoDB connection details in Key Vault
-resource "azurerm_key_vault_secret" "cosmos_connection_string" {
-  name            = "cosmos-connection-string"
-  value           = data.azapi_resource.mongo_cluster_info.output.properties.connectionString
-  key_vault_id    = azurerm_key_vault.main.id
-  content_type    = "text/plain"
-  expiration_date = timeadd(timestamp(), "720h") # 30 days
-
+resource "azapi_resource_action" "cosmos_connection_string" {
+  type        = "Microsoft.KeyVault/vaults/secrets@2025-05-01"
+  resource_id = "${azurerm_key_vault.main.id}/secrets/cosmos-connection-string"
+  action      = ""
+  method      = "PUT"
+  when        = "apply"
+  body = {
+    properties = {
+      value       = data.azapi_resource.mongo_cluster_info.output.properties.connectionString
+      contentType = "text/plain"
+      attributes = {
+        enabled = true
+      }
+    }
+  }
   depends_on = [azurerm_role_assignment.keyvault_admin, data.azapi_resource.mongo_cluster_info]
 }

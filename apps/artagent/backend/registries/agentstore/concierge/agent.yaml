@@ -85,7 +85,6 @@ session:
   # Speech-to-Text configuration (VoiceLive mode)
   input_audio_transcription_settings:
     model: gpt-4o-transcribe             # STT model: gpt-4o-transcribe or whisper-1
-    language: en-US                      # Primary language: en-US, es-ES, fr-FR, etc.
 
   # Turn detection (when agent knows user finished speaking)
   turn_detection:

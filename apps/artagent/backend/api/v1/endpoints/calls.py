@@ -242,6 +242,7 @@ async def initiate_call(
                     redis_mgr=http_request.app.state.redis,
                     browser_session_id=browser_session_id,  # 🎯 Pass browser session for coordination
                     stream_mode=effective_stream_mode,
+                    transcription_language=request.language,
                     record_call=record_call_override,
                 )
                 if result.get("status") == "success":
@@ -256,6 +257,7 @@ async def initiate_call(
                                 "target_number": request.target_number,
                                 "browser_session_id": browser_session_id,
                                 "streaming_mode": str(effective_stream_mode),
+                                "language": request.language,
                             }
                             await http_request.app.state.conn_manager.set_call_context(
                                 call_id, base_context

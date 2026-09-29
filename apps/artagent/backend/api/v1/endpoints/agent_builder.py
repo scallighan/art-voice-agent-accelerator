@@ -142,7 +142,7 @@ class SpeechConfigSchema(BaseModel):
         default=False, description="Enable semantic sentence boundary detection"
     )
     candidate_languages: list[str] = Field(
-        default_factory=lambda: ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT"],
+        default_factory=lambda: ["en-US", "ar-AE", "es-ES", "fr-FR", "de-DE", "it-IT"],
         description="Languages for automatic detection",
     )
     enable_diarization: bool = Field(default=False, description="Enable speaker diarization")

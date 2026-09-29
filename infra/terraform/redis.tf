@@ -20,8 +20,8 @@ resource "azapi_resource" "redisEnterprise" {
   ignore_missing_property = true
   body = {
     properties = {
-      highAvailability  = var.enable_redis_ha ? "Enabled" : "Disabled"
-      minimumTlsVersion = "1.2"
+      highAvailability    = var.enable_redis_ha ? "Enabled" : "Disabled"
+      minimumTlsVersion   = "1.2"
     }
     sku = {
       name = var.redis_sku

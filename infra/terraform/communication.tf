@@ -116,13 +116,21 @@ resource "azapi_resource_action" "acs_list_keys" {
 }
 
 # Store the ACS connection string in Azure Key Vault as a secret
-resource "azurerm_key_vault_secret" "acs_connection_string" {
-  name            = "acs-connection-string"
-  value           = azapi_resource_action.acs_list_keys.output.primary_connection_string
-  key_vault_id    = azurerm_key_vault.main.id
-  content_type    = "text/plain"
-  expiration_date = timeadd(timestamp(), "720h") # 30 days
-
+resource "azapi_resource_action" "acs_connection_string" {
+  type        = "Microsoft.KeyVault/vaults/secrets@2025-05-01"
+  resource_id = "${azurerm_key_vault.main.id}/secrets/acs-connection-string"
+  action      = ""
+  method      = "PUT"
+  when        = "apply"
+  body = {
+    properties = {
+      value       = azapi_resource_action.acs_list_keys.output.primary_connection_string
+      contentType = "text/plain"
+      attributes = {
+        enabled = true
+      }
+    }
+  }
   depends_on = [
     azapi_resource_action.acs_list_keys,
     azurerm_role_assignment.keyvault_backend_secrets,
@@ -308,4 +316,3 @@ resource "azurerm_eventgrid_system_topic" "acs" {
 
 #   depends_on = [azurerm_eventgrid_system_topic.acs]
 # }
-

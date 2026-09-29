@@ -42,6 +42,16 @@ variable "sku" {
   }
 }
 
+variable "public_network_access" {
+  description = "Public network access mode for App Configuration"
+  type        = string
+  default     = "Enabled"
+  validation {
+    condition     = contains(["Enabled", "Disabled"], var.public_network_access)
+    error_message = "Public network access must be Enabled or Disabled."
+  }
+}
+
 # ============================================================================
 # IDENTITY VARIABLES
 # ============================================================================

@@ -746,6 +746,7 @@ class VoiceLiveSDKHandler:
         call_connection_id: str | None = None,
         transport: VoiceLiveTransport = "acs",
         user_email: str | None = None,
+        transcription_language: str | None = None,
     ) -> None:
         self.websocket = websocket
         self.session_id = session_id
@@ -761,6 +762,7 @@ class VoiceLiveSDKHandler:
         self._transport: VoiceLiveTransport = transport
         self._manual_commit_enabled = transport == "acs"
         self._user_email = user_email
+        self._transcription_language = transcription_language
 
         self._settings = None
         self._credential: AzureKeyCredential | TokenCredential | None = None
@@ -1122,6 +1124,8 @@ class VoiceLiveSDKHandler:
                     logger.debug("Failed to emit agent inventory snapshot", exc_info=True)
 
                 system_vars = {}
+                if self._transcription_language:
+                    system_vars["transcription_language"] = self._transcription_language
 
                 # Priority 1: User profile from email login
                 if user_profile:

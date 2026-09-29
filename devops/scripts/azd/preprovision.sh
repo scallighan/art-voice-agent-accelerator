@@ -142,7 +142,7 @@ resolve_location() {
 # Set Terraform variables using azd env (stored in .azure/<env>/.env as TF_VAR_*)
 # This is the azd best practice - azd automatically exports TF_VAR_* to Terraform
 set_terraform_env_vars() {
-    local deployer
+    local deployer private_endpoints deployer_ip
     deployer=$(get_deployer_identity)
     
     log "Setting Terraform variables via azd env..."
@@ -152,6 +152,17 @@ set_terraform_env_vars() {
     azd env set TF_VAR_environment_name "$AZURE_ENV_NAME"
     azd env set TF_VAR_location "$AZURE_LOCATION"
     azd env set TF_VAR_deployed_by "$deployer"
+
+    private_endpoints="${TF_VAR_enable_private_endpoints:-$(get_azd_env_value TF_VAR_enable_private_endpoints)}"
+    if [[ "$private_endpoints" == "true" && -z "${TF_VAR_deployer_ip_cidrs:-$(get_azd_env_value TF_VAR_deployer_ip_cidrs)}" ]]; then
+        deployer_ip=$(curl -fsS --max-time 10 https://api.ipify.org 2>/dev/null || true)
+        if [[ "$deployer_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            azd env set TF_VAR_deployer_ip_cidrs "[\"${deployer_ip}/32\"]"
+            info "Restricted Key Vault administration to the current deployment client"
+        else
+            warn "Could not determine the deployment client IP; set TF_VAR_deployer_ip_cidrs before provisioning"
+        fi
+    fi
     
     info "Deployer: $deployer"
     success "Set TF_VAR_* in azd environment"

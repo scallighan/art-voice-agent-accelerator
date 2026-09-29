@@ -11,7 +11,7 @@ The accelerator implements a "flat" architecture optimized for rapid deployment 
 
 | Component | Demo Implementation | Production Requirement |
 |-----------|---------------------|------------------------|
-| **Networking** | Public endpoints with authentication | Private endpoints, VNet integration |
+| **Networking** | Optional VNet integration and private endpoints | Private endpoints with a private deployment runner |
 | **Authentication** | Basic scaffolding | Full identity management, MFA |
 | **API Gateway** | Direct container access | API Management with rate limiting |
 | **Message Queuing** | In-process handling | Managed messaging service |
@@ -90,7 +90,42 @@ Azure API Management provides critical controls for AI workloads:
 
 #### Private Endpoints
 
-All Azure services should be accessed via private endpoints:
+Set `TF_VAR_enable_private_endpoints=true` to create:
+
+- A VNet-injected Container Apps environment
+- A dedicated private-endpoint subnet
+- Private DNS zones and VNet links
+- Private endpoints for Key Vault, App Configuration, ACR, Blob Storage,
+  Cosmos DB MongoDB vCore, Azure Managed Redis, and AI Foundry/Voice Live
+
+```bash
+azd env set TF_VAR_enable_private_endpoints true
+azd env set TF_VAR_disable_public_network_access false
+azd provision --preview
+azd provision
+azd deploy
+```
+
+The first enablement replaces the Container Apps environment because an existing
+environment cannot be moved into a VNet in place. Plan for deployment downtime.
+The preprovision hook automatically limits Key Vault's public administration path
+to the current deployment client's IPv4 address.
+
+`TF_VAR_disable_public_network_access=false` keeps control-plane deployment
+compatible with local `azd` and its postprovision hooks while application traffic
+uses private DNS and private endpoints. Set it to `true` only when Terraform,
+App Configuration updates, and image builds run from a private network runner.
+
+ACR public access remains independently controlled by
+`TF_VAR_acr_public_network_access_enabled`. The default is `true` because `azd`
+remote builds cannot push to a private-only registry without a private build
+agent pool. Azure Communication Services does not currently expose a private-link
+resource for the Communication Service endpoint, so it remains protected with
+managed identity/RBAC and service-level authentication. Azure Managed Redis uses
+its private endpoint for application connectivity, but its current resource API
+does not expose a public-network-disable property.
+
+Supported Azure services should be accessed via private endpoints:
 
 | Service | Documentation |
 |---------|---------------|
